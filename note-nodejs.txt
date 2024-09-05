@@ -22,7 +22,7 @@ app.use(morgan('combined'))
 
 2. Template engine (handlebars)
 - npm i express-handlebars
-const {engine} = required('express-handlebars')
+const {engine} = require('express-handlebars')
 
 //Sửa lại đuôi file .handlebars -> .hbs
 app.engine('hbs', engine({
@@ -32,7 +32,7 @@ app.engine('hbs', engine({
 //Cấu hình views - scr -> resources -> views -> layouts + partials
 // __dirname là đường dẫn trỏ tới file index.js
 app.set('view engine', 'hbs');
-app.set('views', path.join(__dirname, 'resource/views'))
+app.set('views', path.join(__dirname, 'resources/views'))
 
 - partials: header.hbs + footer.hbs
 - layouts: main.hbs
@@ -40,7 +40,7 @@ app.set('views', path.join(__dirname, 'resource/views'))
 main.hbs
 {{> header}}
 
-{{body}}
+{{{body}}}
 
 {{> footer}}
 
@@ -102,20 +102,190 @@ app.get('/search', (req, res) => {
 	const express = require('express');
   	const router = express.Router();
 	--> khai báo và sử dụng controller tương ứng đã tạo ở trên --> khai báo các phương thức với các đường dẫn và function tương ứng ở controller
-	vd: router.use('/', newsController.index);
+	vd: router.get('/', newsController.index);
 
 - folder routes --> tạo file index.js --> khai báo route vưa tạo ở trên - vd const newsRoute = require('./news') --> function route(app) 
 	--> sử dụng path và route tương ứng - app.ues(path, newsRoute) 
 - src/index.js khai báo const route = required('./routes'); --> route(app);
 
 
-(*) LUỒNG ĐI: vd cho trang tin tức news
-   - file src/index.js --> khai báo route - const route = require('./routes') --> gọi function route và truyền vào app - route(app); 
+(*) LUỒNG ĐI: vd cho trang tin tức news 
    - src/app/controllers --> tạo controller NewsController --> khai báo phương thức get, post,.. ứng với mỗi phương thức là 1 path tương ứng
 	vd: showHomePage(req, res) {res.render('home');} // [GET] /
+	=> module.exports = new NewsController;
+
    - trong src/routes tạo file news.js --> khai báo newsController - const newsController = require('../app/controllers/NewsController'); --> khai báo router - router = express.Router()
-	--> router.use('/', newsController.showHomePage) - path và kết nối tới phương thức tương ứng ở controller
+	--> router.get('/', newsController.showHomePage) - path và kết nối tới phương thức tương ứng ở controller
+	=> module.exports = new router;
+
    - file src/routes/index.js --> khai báo newsRouter - const newsRouter = require('./news') --> khai báo function route(app) --> app.use('/news', newsRouter); 
+	=> module.exports = route;
+
+   - file src/index.js --> khai báo route - const route = require('./routes') --> gọi function route và truyền vào app - route(app);
 
 8. Install mongoDB
    
+9. Prettier 
+	CONTENT:
+	1. code formatter
+	2. lint-staged
+	3. husky
+npm i prettier lint-staged husky --save-dev
+- prettier --single-quote (Chuyển nháy kép thành nháy đơn)
+- prettier --trailing-comma (Thêm dấu phẩy ở cuối các phần tử của array hoặc object) all
+- --write (sửa file)
+- docs package.json (file áp dụng prettier)
+- "beautiful": "prettier \"src/**/*.{js,json,scss}\" --write --single-quote --trailing-comma all --tab-width 4"
+
+
+- lint-staged - format những file đã được add vào git
+- add vào package.json
+- "lint-staged": {
+	"pattern to use command": "your command"
+}
+
+- vd: "lint-staged": {
+	"src/**/*.{js, json, scss}": "prettier --tab-width 4 --single-quote --trailing-comma all  --write"
+}
+
+
+10. MCV - Model
+
+	CONTENT:
+	1. install mongoose
+	2. connect to db
+	3. create model
+
+- mongodb - document database - khác với csdl quan hệ (SQL, mysql,..) các đối tượng có thể không đồng nhất về các field
+- mongoose - là một công cụ mô hình hóa mongdb, được thiết kế để làm việc với môi trường bất đồng bộ (asynchronous environment) hỗ trợ cả promise và callbacks
+
+- npm i mongoose
+- src -> tạo folder config -> tạo folder db -> index.js
+- Viết function connect tới DB
+
+- const mongoose = require('mongoose'); 
+
+async function connect () {
+	try{
+		await mongoose.connect('path', {
+			useNewUrlParser: true,
+            		useUnifiedTopology: true
+		});
+		console.log('Connect successfully!!!');
+	} catch(error) {
+		console.log('Connect failure!!!');
+	}
+}
+
+module.exports = { connect };
+
+- vd path: mongodb://localhost:27017/f8_education_dev
+
+- src/index.js -> khai báo const db = required('./config/db'); --> db.connect();
+
+- src/app -> tạo folder models -> tạo file Model.js vd: Course.js --> 
+	+ Khai báo mongoose - const mongoose = require('mongoose');
+	+ Khai báo Schema - const Schema = mongoose.Schema;
+	+ const Course = new Schema({
+		name: {type: String, default: '', maxLength: 255},
+		description: {type: String, default: '', maxLength: 600},
+	})
+
+	+ module.exports = mongoose.model('Course', Course);
+
+- src/app/controller --> trả về dữ liệu --> khai báo Course = require('./models/Course');
+	--> viết phương thức trả về dữ liệu 
+	vd: course(req, res) {
+		Course.find({})
+            .then(courses => {
+                res.json(courses);
+            })
+            .catch(err => {
+                res.status(400).json({ error: 'ERROR!' });
+            })
+	}
+	
+
+11.
+	CONTENT: 
+	1. JSON viewer 
+	2. Route methods
+	3. App listen log
+	4. Resource path
+
+1. Cài đặt extension JSON viewer chrome - làm đẹp file json được trả về từ server -> client
+
+
+12. [CRUD] Read from db
+	1. Truyền dữ liệu từ controller sang view
+	- vd: Ở controller có method render trang home
+		home(req, res, next) {
+			Course.find({})
+			.then(courses => {res.render('home', {
+				title: 'Home',
+				courses: courses,  //Truyền dữ liệu sang view dưới dạng object
+			})})
+			.catch(next);
+		}
+
+	2. Hiển thị dữ liệu được truyền từ controller ở view
+	+ Đối với string
+	<h1>{{title}}</h1>
+
+	+ Đối với object
+	vd:person: {
+		firstName: 'Ellen',
+		lastName: 'Joe',
+	}
+
+	--> {{#with person }}
+		{{firstName}} {{lastName}}
+	{{/with}}
+
+	+ Đối với array
+	vd: people: [
+		'Raiden Ei',
+		'Ellen Joe',
+		'Firefly',
+	]
+
+	--> {{#eaach people}}
+		{{this}}
+	{{/each}}
+
+	(*) Đối với object và array --> sửa lại 1 tí ở controller
+	- courses : courses.map(courses => courses.toObject(courses));
+	==> Biến object constructor được trả về từ mongoose thành object literal qua phương thức .toOject()
+	
+
+	(*) Tránh việc duplicate code --> tiến hành tạo một function xử lý object
+	- src tạo folder util --> tạo file mongoose.js 
+	- Tạo các function xử lý biến constructor object -> literal object
+	- module.exports = {
+		multipleMongooseToObject: function(mongooseArray) {
+			return mongooseArray.map(mongoose => mongoose.toObject());
+		},
+		mongooseToObject: function(mongoose) {
+			return mongoose ? mongoose.toObject(mongoose) : mongoose;
+		}
+	}
+	
+(*) Đọc docs handlebarsjs để tìm hiểu thêm 
+
+
+13. 
+- add showDetail function
+
+showDetailCourses(req, res, next) {
+        Course.findOne({ slug: req.params.slug })
+            .then(course => {
+                res.render('courses/show', {course: mongooseToObject(course)});
+            })
+            .catch(next);
+    }
+
+14. add create function
+
+- npm i mongoose-slug-generator
+- add plugin mongoose-slug-generator vào model
+	
