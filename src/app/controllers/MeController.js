@@ -13,6 +13,27 @@ class MeController {
             })
             .catch(next);
     }
+
+    // [GET] /me/trash/courses
+    deletedCourse(req, res, next) {
+        Course.findDeleted({})
+            .then((courses) => {
+                res.render('me/deleted-courses', {
+                    title: 'Khóa học đã xóa',
+                    courses: multipleMongooseToObject(courses),
+                })
+            })
+            .catch(next);
+    }
+
+    // [PUT] /me/restore/courses/:id
+    restoreCourse(req, res, next) {
+        Course.restore({ _id: req.params.id })
+            .then(() => {
+                res.redirect('/me/stored/courses');
+            })
+            .catch(next);
+    }
 }
 
 module.exports = new MeController;
